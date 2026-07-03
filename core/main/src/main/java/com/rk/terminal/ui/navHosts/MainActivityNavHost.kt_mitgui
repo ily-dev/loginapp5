@@ -1,0 +1,223 @@
+package com.rk.terminal.ui.navHosts
+
+import android.app.Activity
+import android.content.res.Configuration
+import android.os.Build
+import android.view.Window
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Button
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.rk.settings.Settings
+import com.rk.terminal.ui.activities.terminal.MainActivity
+import com.rk.terminal.ui.animations.NavigationAnimationTransitions
+import com.rk.terminal.ui.routes.MainActivityRoutes
+import com.rk.terminal.ui.screens.customization.Customization
+import com.rk.terminal.ui.screens.downloader.Downloader
+import com.rk.terminal.ui.screens.settings.Settings
+import com.rk.terminal.ui.screens.terminal.Rootfs
+import com.rk.terminal.ui.screens.terminal.TerminalScreen
+
+// ============================================================
+// ★ LOKALE SHOWLOG FUNKTION
+// ============================================================
+private fun showLog(title: String, message: String) {
+    MainActivity.showLog("MainActivityNavHost", "[$title] $message")
+}
+
+var showStatusBar = mutableStateOf(Settings.statusBar)
+var horizontal_statusBar = mutableStateOf(Settings.horizontal_statusBar)
+
+fun showStatusBar(show: Boolean, window: Window) {
+    showLog("Debug", "📊 StatusBar: ${if (show) "anzeigen" else "ausblenden"}")
+    
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+        if (show) {
+            window.decorView.windowInsetsController!!.show(
+                android.view.WindowInsets.Type.statusBars()
+            )
+            showLog("Debug", "📊 StatusBar angezeigt (API > Q)")
+        } else {
+            window.decorView.windowInsetsController!!.hide(
+                android.view.WindowInsets.Type.statusBars()
+            )
+            showLog("Debug", "📊 StatusBar ausgeblendet (API > Q)")
+        }
+    } else {
+        if (show) {
+            WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+                controller.hide(WindowInsetsCompat.Type.statusBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+            }
+            showLog("Debug", "📊 StatusBar angezeigt (API <= Q)")
+        } else {
+            WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+                controller.hide(WindowInsetsCompat.Type.statusBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+            showLog("Debug", "📊 StatusBar ausgeblendet (API <= Q)")
+        }
+    }
+}
+
+@Composable
+fun UpdateStatusBar(mainActivityActivity: MainActivity, show: Boolean = true) {
+    LaunchedEffect(show) {
+        showLog("Debug", "📊 UpdateStatusBar: show=$show")
+        showStatusBar(show = show, window = mainActivityActivity.window)
+    }
+}
+
+@Composable
+fun MainActivityNavHost(modifier: Modifier = Modifier, navController: NavHostController, mainActivity: MainActivity) {
+    showLog("Info", "🚀 MainActivityNavHost initialisiert")
+    showLog("Debug", "📊 Rootfs isDownloaded: ${Rootfs.isDownloaded.value}")
+    
+    NavHost(
+        navController = navController,
+        startDestination = MainActivityRoutes.MainScreen.route,
+        enterTransition = { NavigationAnimationTransitions.enterTransition },
+        exitTransition = { NavigationAnimationTransitions.exitTransition },
+        popEnterTransition = { NavigationAnimationTransitions.popEnterTransition },
+        popExitTransition = { NavigationAnimationTransitions.popExitTransition },
+    ) {
+        composable(MainActivityRoutes.MainScreen.route) {
+            showLog("Debug", "🖥️ Navigiere zu MainScreen")
+            
+            if (Rootfs.isDownloaded.value) {
+                val config = LocalConfiguration.current
+                val isLandscape = Configuration.ORIENTATION_LANDSCAPE == config.orientation
+                
+                showLog("Debug", "🖥️ MainScreen: ${if (isLandscape) "Landscape" else "Portrait"}")
+                
+                if (isLandscape) {
+                    UpdateStatusBar(mainActivity, show = horizontal_statusBar.value)
+                } else {
+                    UpdateStatusBar(mainActivity, show = showStatusBar.value)
+                }
+
+                TerminalScreen(mainActivityActivity = mainActivity, navController = navController)
+            } else {
+                showLog("Info", "📥 Rootfs nicht heruntergeladen, starte Download...")
+                
+                // ★★★ NEUER CODE FÜR DOWNLOADER (OHNE GUI) ★★★
+                var isSetupComplete by remember { mutableStateOf(false) }
+                var progressText by remember { mutableStateOf("Starte Setup...") }
+                var errorMsg by remember { mutableStateOf<String?>(null) }
+                val context = LocalContext.current
+
+                // Wenn der Download abgeschlossen ist, aktualisiere den Status
+                LaunchedEffect(isSetupComplete) {
+                    if (isSetupComplete) {
+                        Rootfs.refreshStatus()
+                        showLog("Info", "✅ Setup abgeschlossen, Rootfs aktualisiert")
+                    }
+                }
+
+                // Starte den Download im Hintergrund
+                LaunchedEffect(Unit) {
+                    showLog("Info", "🚀 Starte Downloader...")
+                    val downloader = Downloader()
+                    val success = downloader.runSetup(
+                        context = context,
+                        callback = object : Downloader.ProgressCallback {
+                            override fun onProgress(step: String, progress: Float, message: String) {
+                                val percent = (progress * 100).toInt()
+                                progressText = "$step: $percent% - $message"
+                                showLog("Debug", "📊 $step: $percent% - $message")
+                            }
+                            
+                            override fun onComplete(success: Boolean, message: String) {
+                                if (success) {
+                                    isSetupComplete = true
+                                    progressText = "✅ Setup abgeschlossen!"
+                                    showLog("Info", "✅ $message")
+                                } else {
+                                    errorMsg = message
+                                    progressText = "❌ Fehler: $message"
+                                    showLog("Error", "❌ $message")
+                                }
+                            }
+                            
+                            override fun onError(error: String) {
+                                errorMsg = error
+                                progressText = "❌ Fehler: $error"
+                                showLog("Error", "❌ $error")
+                            }
+                        }
+                    )
+                }
+
+                // Lade-Bildschirm anzeigen
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = androidx.compose.foundation.layout.Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            modifier = Modifier.size(60.dp),
+                            color = MaterialTheme.colorScheme.primary
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                        Text(
+                            text = progressText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center
+                        )
+                        if (errorMsg != null) {
+                            Spacer(modifier = Modifier.height(16.dp))
+                            Button(
+                                onClick = {
+                                    // Fehler zurücksetzen und neu starten
+                                    errorMsg = null
+                                    progressText = "Starte neu..."
+                                    showLog("Info", "🔄 Neustart des Downloads...")
+                                    // Die Composable wird neu aufgebaut und der Download startet erneut
+                                }
+                            ) {
+                                Text("Erneut versuchen")
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        
+        composable(MainActivityRoutes.Settings.route) {
+            showLog("Info", "⚙️ Navigiere zu Settings")
+            UpdateStatusBar(mainActivity, show = true)
+            Settings(navController = navController, mainActivity = mainActivity)
+        }
+        
+        composable(MainActivityRoutes.Customization.route) {
+            showLog("Info", "🎨 Navigiere zu Customization")
+            UpdateStatusBar(mainActivity, show = true)
+            Customization()
+        }
+    }
+}

@@ -1,0 +1,14 @@
+# 1. Von überall ausführbar - wechsle einfach in das local Verzeichnis
+cd /data/user/0/com.meinname.loginapp8.debug/local
+./rem_ubuntu.sh
+
+# 2. Oder direkt aus dem Ubuntu Ordner
+cd /data/user/0/com.meinname.loginapp8.debug/local/ubuntu
+../rem_ubuntu.sh
+
+# 3. Mit Optionen
+./rem_ubuntu.sh --clean
+./rem_ubuntu.sh --purge
+./rem_ubuntu.sh --remove-ssh-keys
+./rem_ubuntu.sh --purge --remove-ssh-keys
+./rem_ubuntu.sh --output /sdcard/Download

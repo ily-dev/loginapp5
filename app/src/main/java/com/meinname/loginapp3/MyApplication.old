@@ -1,0 +1,55 @@
+// app/src/main/java/com/meinname/loginapp3/MyApplication.java
+package com.meinname.loginapp3;
+
+import android.app.Application;
+import android.util.Log;
+
+// ★ ★ ★ BEIDE IMPORTIEREN ★ ★ ★
+import org.qtproject.qt5.android.bindings.QtApplication;
+import com.rk.terminal.App; // Deine Core-App
+
+public class MyApplication extends Application {
+    
+    private static final String TAG = "MyApplication";
+    private static MyApplication instance;
+    
+    @Override
+    public void onCreate() {
+        super.onCreate();
+        instance = this;
+        Log.d(TAG, "🚀 MyApplication onCreate");
+        
+        // ★ ★ ★ 1. CORE APP INITIALISIEREN ★ ★ ★
+        // ★ ★ ★ NICHT: new App() !!! ★ ★ ★
+        // Der Context wird von super.onCreate() bereits gesetzt!
+        // App wird automatisch initialisiert, wenn es im Manifest eingetragen ist.
+        // Wir rufen hier nur die Globals.init() auf.
+        
+        try {
+            // ★ ★ ★ Globals.init() mit diesem Application Context aufrufen ★ ★ ★
+            com.rk.terminal.Globals.init(this);
+            Log.d(TAG, "✅ Core App initialisiert");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Core App Fehler: " + e.getMessage());
+        }
+        
+        // ★ ★ ★ 2. QT APP INITIALISIEREN ★ ★ ★
+        try {
+            // QtApplication wird normalerweise nicht manuell initialisiert
+            // Es wird automatisch von QtActivity geladen
+            Log.d(TAG, "✅ Qt Application bereit");
+        } catch (Exception e) {
+            Log.e(TAG, "❌ Qt Application Fehler: " + e.getMessage());
+        }
+    }
+    
+    @Override
+    public void onTerminate() {
+        super.onTerminate();
+        // Aufräumen, falls nötig
+    }
+    
+    public static MyApplication getInstance() {
+        return instance;
+    }
+}

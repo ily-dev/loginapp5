@@ -1,0 +1,15 @@
+# 1. Von überall ausführbar - wechsle einfach in das local Verzeichnis
+cd /data/user/0/com.meinname.loginapp8.debug/local
+./rem_alpine.sh
+
+# 2. Oder direkt aus dem Alpine Ordner
+cd /data/user/0/com.meinname.loginapp8.debug/local/alpine
+../rem_alpine.sh
+
+# 3. Oder mit absolutem Pfad von überall
+/data/user/0/com.meinname.loginapp8.debug/local/rem_alpine.sh
+
+# 4. Mit Optionen
+./rem_alpine.sh --clean
+./rem_alpine.sh --remove-ssh-keys
+./rem_alpine.sh --output /sdcard/Download

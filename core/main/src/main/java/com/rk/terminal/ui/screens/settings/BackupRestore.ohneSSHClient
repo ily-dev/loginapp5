@@ -1,0 +1,201 @@
+// core/main/src/main/java/com/rk/terminal/ui/screens/settings/BackupRestore.kt
+package com.rk.terminal.ui.screens.settings
+
+import android.content.Context
+import com.rk.terminal.ui.activities.terminal.MainActivity
+import kotlinx.coroutines.*
+
+// ============================================================
+// ★ BACKUP/RESTORE LOGIK (OHNE PROOT - NUR AUSGABE)
+// ============================================================
+
+private fun showLog(title: String, message: String) {
+    MainActivity.showLog("BackupRestore", "[$title] $message")
+}
+
+// ============================================================
+// ★ DATA CLASS FÜR BACKUP-ERGEBNIS
+// ============================================================
+data class BackupResult(
+    val success: Boolean,
+    val message: String,
+    val exitCode: Int = -1
+)
+
+// ============================================================
+// ★ BACKUP SCRIPT AUSFÜHREN (NUR AUSGABE)
+// ============================================================
+fun runBackupScript(
+    context: Context,
+    scriptName: String,
+    onProgress: (Int) -> Unit,
+    onComplete: (BackupResult) -> Unit
+) {
+    val prefix = context.filesDir.parent
+    val scriptPath = "$prefix/local/$scriptName"
+    
+    showLog("Backup", "📝 Starte Backup-Script: $scriptName")
+    
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            onProgress(10)
+            
+            // chmod +x
+            val chmod = Runtime.getRuntime().exec(arrayOf("chmod", "+x", scriptPath))
+            chmod.waitFor()
+            showLog("Backup", "✅ chmod +x erfolgreich")
+            onProgress(20)
+            
+            // Script ausführen
+            val process = Runtime.getRuntime().exec(arrayOf("/system/bin/sh", scriptPath, "--full"))
+            onProgress(30)
+            
+            // ★ ★ ★ JEDE ZEILE AUSGEBEN (OHNE ANALYSE) ★ ★ ★
+            val reader = process.inputStream.bufferedReader()
+            var line: String?
+            var lineCount = 0
+            
+            while (reader.readLine().also { line = it } != null) {
+                lineCount++
+                // ★ ★ ★ ALLE ZEILEN DIREKT AUSGEBEN ★ ★ ★
+                showLog("Backup", line ?: "")
+                
+                // Nur Progress für jede 5. Zeile (optional)
+                if (lineCount % 5 == 0) {
+                    val progress = (30 + (lineCount * 2)).coerceAtMost(90)
+                    onProgress(progress)
+                }
+            }
+            
+            // Fehlerausgaben ausgeben
+            val errorReader = process.errorStream.bufferedReader()
+            errorReader.useLines { lines ->
+                lines.forEach {
+                    showLog("Backup", "❌ $it")
+                }
+            }
+            
+            val exitCode = process.waitFor()
+            showLog("Backup", "📊 Exit Code: $exitCode")
+            
+            withContext(Dispatchers.Main) {
+                if (exitCode == 0) {
+                    onProgress(100)
+                    onComplete(
+                        BackupResult(
+                            success = true,
+                            message = "✅ Backup erfolgreich!",
+                            exitCode = exitCode
+                        )
+                    )
+                } else {
+                    onComplete(
+                        BackupResult(
+                            success = false,
+                            message = "❌ Backup fehlgeschlagen (Exit: $exitCode)",
+                            exitCode = exitCode
+                        )
+                    )
+                }
+            }
+            
+        } catch (e: Exception) {
+            showLog("Backup", "❌ Fehler: ${e.message}")
+            withContext(Dispatchers.Main) {
+                onComplete(
+                    BackupResult(
+                        success = false,
+                        message = "❌ Fehler: ${e.message}"
+                    )
+                )
+            }
+        }
+    }
+}
+
+// ============================================================
+// ★ RESTORE SCRIPT AUSFÜHREN (NUR AUSGABE)
+// ============================================================
+fun runRestoreScript(
+    context: Context,
+    scriptName: String,
+    onProgress: (Int) -> Unit,
+    onComplete: (BackupResult) -> Unit
+) {
+    val prefix = context.filesDir.parent
+    val scriptPath = "$prefix/local/$scriptName"
+    
+    showLog("Restore", "📝 Starte Restore-Script: $scriptName")
+    
+    CoroutineScope(Dispatchers.IO).launch {
+        try {
+            onProgress(10)
+            
+            val chmod = Runtime.getRuntime().exec(arrayOf("chmod", "+x", scriptPath))
+            chmod.waitFor()
+            showLog("Restore", "✅ chmod +x erfolgreich")
+            onProgress(20)
+            
+            val process = Runtime.getRuntime().exec(arrayOf("/system/bin/sh", scriptPath, "--restore"))
+            onProgress(30)
+            
+            // ★ ★ ★ JEDE ZEILE AUSGEBEN (OHNE ANALYSE) ★ ★ ★
+            val reader = process.inputStream.bufferedReader()
+            var line: String?
+            var lineCount = 0
+            
+            while (reader.readLine().also { line = it } != null) {
+                lineCount++
+                // ★ ★ ★ ALLE ZEILEN DIREKT AUSGEBEN ★ ★ ★
+                showLog("Restore", line ?: "")
+                
+                if (lineCount % 5 == 0) {
+                    val progress = (30 + (lineCount * 2)).coerceAtMost(90)
+                    onProgress(progress)
+                }
+            }
+            
+            val errorReader = process.errorStream.bufferedReader()
+            errorReader.useLines { lines ->
+                lines.forEach {
+                    showLog("Restore", "❌ $it")
+                }
+            }
+            
+            val exitCode = process.waitFor()
+            showLog("Restore", "📊 Exit Code: $exitCode")
+            
+            withContext(Dispatchers.Main) {
+                if (exitCode == 0) {
+                    onProgress(100)
+                    onComplete(
+                        BackupResult(
+                            success = true,
+                            message = "✅ Restore erfolgreich!",
+                            exitCode = exitCode
+                        )
+                    )
+                } else {
+                    onComplete(
+                        BackupResult(
+                            success = false,
+                            message = "❌ Restore fehlgeschlagen (Exit: $exitCode)",
+                            exitCode = exitCode
+                        )
+                    )
+                }
+            }
+            
+        } catch (e: Exception) {
+            showLog("Restore", "❌ Fehler: ${e.message}")
+            withContext(Dispatchers.Main) {
+                onComplete(
+                    BackupResult(
+                        success = false,
+                        message = "❌ Fehler: ${e.message}"
+                    )
+                )
+            }
+        }
+    }
+}

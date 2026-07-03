@@ -1,0 +1,112 @@
+package com.rk.terminal.ui.dialog;
+
+import android.app.AlertDialog;
+import android.content.Context;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
+
+import com.rk.terminal.ui.activities.terminal.MainActivity;
+import com.rk.terminal.ui.screens.terminal.MkSession;
+import com.rk.terminal.ui.screens.terminal.TerminalBackEnd;
+import com.termux.terminal.TerminalSession;
+import com.termux.terminal.TerminalSessionClient;
+import com.termux.view.TerminalView;
+import com.termux.view.TerminalViewClient;
+
+public class TerminalDialog {
+
+    private AlertDialog dialog;
+    private TerminalView terminalView;
+    private TerminalSession session;
+    private Context context;
+
+    public TerminalDialog(Context context) {
+        this.context = context;
+    }
+
+    public void show() {
+        if (!(context instanceof MainActivity)) {
+            android.util.Log.e("TerminalDialog", "Context ist keine MainActivity!");
+            return;
+        }
+
+        MainActivity activity = (MainActivity) context;
+
+        // Container
+        LinearLayout container = new LinearLayout(context);
+        container.setOrientation(LinearLayout.VERTICAL);
+        container.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        // TerminalView
+        terminalView = new TerminalView(activity, null);
+        terminalView.setLayoutParams(new ViewGroup.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.MATCH_PARENT
+        ));
+
+        // TerminalViewClient
+        TerminalViewClient client = new TerminalBackEnd(terminalView, activity);
+
+        // ★ Session erstellen - INSTANZ von MkSession
+        MkSession mkSession = new MkSession();  // ← Wichtig: Instanz erzeugen!
+        String sessionId = "dialog_session_" + System.currentTimeMillis();
+        session = mkSession.createSession(
+                activity,
+                client,
+                sessionId,
+                0
+        );
+
+        terminalView.attachSession(session);
+        terminalView.setTerminalViewClient(client);
+        terminalView.requestFocus();
+        container.addView(terminalView);
+
+        // Dialog
+        AlertDialog.Builder builder = new AlertDialog.Builder(context);
+        builder.setTitle("SSH Terminal")
+                .setView(container)
+                .setPositiveButton("Schließen", (dialog, which) -> {
+                    closeTerminal();
+                    dialog.dismiss();
+                })
+                .setCancelable(true);
+
+        dialog = builder.create();
+        dialog.show();
+
+        // Größe anpassen
+        int width = (int) (context.getResources().getDisplayMetrics().widthPixels * 0.9);
+        int height = (int) (context.getResources().getDisplayMetrics().heightPixels * 0.8);
+        dialog.getWindow().setLayout(width, height);
+
+        android.util.Log.d("TerminalDialog", "✅ Dialog geöffnet");
+    }
+
+    public void closeTerminal() {
+        if (session != null) {
+            session.finishIfRunning();
+            session = null;
+        }
+        if (terminalView != null) {
+            terminalView.onScreenUpdated();
+            terminalView = null;
+        }
+    }
+
+    public void dismiss() {
+        if (dialog != null && dialog.isShowing()) {
+            closeTerminal();
+            dialog.dismiss();
+            dialog = null;
+        }
+        android.util.Log.d("TerminalDialog", "🔌 Dialog geschlossen");
+    }
+
+    public boolean isShowing() {
+        return dialog != null && dialog.isShowing();
+    }
+}

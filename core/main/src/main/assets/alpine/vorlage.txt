@@ -1,0 +1,15 @@
+# 1. Script ausführbar machen
+chmod +x rem_alpine.sh
+
+# 2. Von überall ausführen (wenn im PATH)
+rem_alpine.sh
+
+# 3. Oder mit absolutem Pfad
+/data/user/0/com.meinname.loginapp8.debug/local/bin/rem_alpine.sh
+
+# 4. Mit Optionen
+rem_alpine.sh --clean              # Nur bereinigen
+rem_alpine.sh --pack               # Nur packen
+rem_alpine.sh --full               # Bereinigen + packen (Default)
+rem_alpine.sh --output /sdcard/Download
+rem_alpine.sh --help               # Hilfe anzeigen

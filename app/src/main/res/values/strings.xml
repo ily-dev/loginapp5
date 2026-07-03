@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="KivySupportCutout">
+        <item name="android:windowNoTitle">true</item>
+        <!-- Display cutout is an area on some devices that extends into the display surface -->
+        
+    </style>
+    <string name="app_name">loginapp3</string>
+    <string name="private_version">d67b19ba67f56099d51a35d321dfcb81ade3cef6</string>
+    <string name="presplash_color">#000000</string>
+</resources>

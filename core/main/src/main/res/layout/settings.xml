@@ -1,0 +1,141 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <TextView
+        android:id="@+id/title_settings"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Einstellungen"
+        android:textSize="24sp"
+        android:textStyle="bold"
+        android:layout_marginBottom="16dp" />
+
+    <TextView
+        android:id="@+id/heading_working_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Standard Arbeitsmodus"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp" />
+
+    <RadioGroup
+        android:id="@+id/radio_group_working_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp">
+
+        <RadioButton
+            android:id="@+id/radio_alpine"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Alpine"
+            android:padding="12dp" />
+
+        <RadioButton
+            android:id="@+id/radio_android"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Android"
+            android:padding="12dp" />
+
+    </RadioGroup>
+
+    <TextView
+        android:id="@+id/heading_input_mode"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Eingabemodus"
+        android:textSize="18sp"
+        android:textStyle="bold"
+        android:layout_marginTop="16dp" />
+
+    <RadioGroup
+        android:id="@+id/radio_group_input_mode"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+        <RadioButton
+            android:id="@+id/radio_input_default"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Standard"
+            android:padding="12dp" />
+
+        <RadioButton
+            android:id="@+id/radio_input_null"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Type Null"
+            android:padding="12dp" />
+
+        <RadioButton
+            android:id="@+id/radio_input_password"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="Sichtbares Passwort"
+            android:padding="12dp" />
+
+    </RadioGroup>
+
+    <Button
+        android:id="@+id/btn_customizations"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Anpassungen"
+        android:layout_marginTop="16dp"
+        style="?android:attr/buttonBarButtonStyle" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:layout_marginTop="16dp">
+
+        <TextView
+            android:id="@+id/txt_seccomp"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="Seccomp" />
+
+        <Switch
+            android:id="@+id/switch_seccomp"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content" />
+
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_all_file_access"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Alle Dateien Zugriff"
+        android:layout_marginTop="16dp" />
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#333"
+        android:layout_marginVertical="16dp" />
+
+    <TextView
+        android:id="@+id/heading_python"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Python Umgebung"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <Button
+        android:id="@+id/btn_start_python"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Python/Kivy starten"
+        android:layout_marginTop="8dp" />
+
+</LinearLayout>

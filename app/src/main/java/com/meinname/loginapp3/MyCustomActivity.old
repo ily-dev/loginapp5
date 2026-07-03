@@ -1,0 +1,198 @@
+package com.meinname.loginapp3;
+
+import android.app.Activity;
+import android.os.Bundle;
+import android.view.WindowManager;
+import android.app.AlertDialog;
+import android.content.DialogInterface;
+import android.content.Intent;
+import android.os.Environment;
+import android.provider.Settings;
+import android.util.Log;
+import android.widget.RadioButton;
+import android.widget.RadioGroup;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+import android.widget.Toast;
+import android.view.View;
+import java.io.File;
+
+public class MyCustomActivity extends Activity {
+    private static final String TAG = "LOGINAPP_ACTIVITY";
+    private boolean pythonAvailable = false;
+    private RadioButton rbPython, rbTerminal;
+    private TextView tvStatus;
+
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        
+        Log.d(TAG, "MyCustomActivity gestartet.");
+        
+        // Hardware-Beschleunigung
+        try {
+            getWindow().setFlags(
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED,
+                WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED
+            );
+        } catch (Exception e) {
+            Log.e(TAG, "Fehler: " + e.getMessage());
+        }
+
+        // Berechtigung für Android 11+
+        if (android.os.Build.VERSION.SDK_INT >= 30) {
+            if (!Environment.isExternalStorageManager()) {
+                Intent intent = new Intent(Settings.ACTION_MANAGE_ALL_FILES_ACCESS_PERMISSION);
+                startActivity(intent);
+            }
+        }
+
+        // Prüfen, ob Python verfügbar ist
+        pythonAvailable = checkPythonAvailability();
+
+        // Auswahl-Dialog anzeigen
+        showModeSelectionDialog();
+    }
+
+    /**
+     * Prüft, ob Python verfügbar ist (nur native .so-Dateien)
+     */
+    private boolean checkPythonAvailability() {
+        return checkPythonNativeLibs();
+    }
+
+    /**
+     * Prüft, ob die nativen Python-Bibliotheken (.so) vorhanden sind
+     */
+    private boolean checkPythonNativeLibs() {
+        String nativeLibDir = getApplicationInfo().nativeLibraryDir;
+        
+        String[] requiredLibs = {
+            "libpython3.11.so",
+            "libmain_arm64-v8a.so",
+            "libpybundle.so"
+        };
+        
+        for (String lib : requiredLibs) {
+            File libFile = new File(nativeLibDir, lib);
+            if (!libFile.exists()) {
+                Log.w(TAG, "Fehlende native Bibliothek: " + lib);
+                return false;
+            }
+        }
+        
+        Log.i(TAG, "Alle nativen Python-Bibliotheken gefunden in: " + nativeLibDir);
+        return true;
+    }
+
+    /**
+     * Zeigt den Auswahl-Dialog mit RadioButtons
+     */
+    private void showModeSelectionDialog() {
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setPadding(40, 20, 40, 10);
+
+        // Status-Text
+        tvStatus = new TextView(this);
+        tvStatus.setText(pythonAvailable 
+            ? "✅ Python/Kivy ist verfügbar." 
+            : "❌ Python wurde NICHT gefunden! Nur Terminal verfügbar.");
+        tvStatus.setTextSize(16);
+        tvStatus.setPadding(0, 0, 0, 20);
+        layout.addView(tvStatus);
+
+        // RadioGroup (sorgt dafür, dass nur EIN Button aktiv ist!)
+        final RadioGroup radioGroup = new RadioGroup(this);
+        radioGroup.setOrientation(LinearLayout.VERTICAL);
+
+        // RadioButton 1: Python (nur anzeigen, wenn verfügbar)
+        if (pythonAvailable) {
+            rbPython = new RadioButton(this);
+            rbPython.setId(View.generateViewId());
+            rbPython.setText("🐍 Python (Kivy) - Hauptmodus");
+            rbPython.setPadding(0, 10, 0, 10);
+            radioGroup.addView(rbPython);
+        }
+
+        // RadioButton 2: Terminal (immer verfügbar)
+        rbTerminal = new RadioButton(this);
+        rbTerminal.setId(View.generateViewId());
+        rbTerminal.setText("💻 Terminal (ReTerminal)");
+        rbTerminal.setPadding(0, 10, 0, 10);
+        radioGroup.addView(rbTerminal);
+
+        // Standard-Auswahl setzen
+        if (pythonAvailable && rbPython != null) {
+            rbPython.setChecked(true);
+        } else {
+            rbTerminal.setChecked(true);
+        }
+
+        layout.addView(radioGroup);
+
+        // Hinweis bei fehlendem Python
+        if (!pythonAvailable) {
+            TextView tvHint = new TextView(this);
+            tvHint.setText("\n💡 Tipp: Führe 'buildozer -v android debug' aus,\num den Python-Bundle zu erstellen.");
+            tvHint.setTextSize(12);
+            tvHint.setPadding(0, 10, 0, 0);
+            layout.addView(tvHint);
+        }
+
+        // Dialog bauen
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Modus auswählen");
+        builder.setView(layout);
+        builder.setCancelable(false);
+
+        builder.setPositiveButton("STARTEN", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                int selectedId = radioGroup.getCheckedRadioButtonId();
+                
+                // Prüfen, WELCHER RadioButton ausgewählt ist:
+                if (pythonAvailable && rbPython != null && selectedId == rbPython.getId()) {
+                    startPythonMode();
+                } else {
+                    startReTerminalMode();
+                }
+            }
+        });
+
+        builder.setNegativeButton("Beenden", new DialogInterface.OnClickListener() {
+            @Override
+            public void onClick(DialogInterface dialog, int which) {
+                finish();
+            }
+        });
+
+        builder.show();
+    }
+
+    /**
+     * Startet den Python-Modus
+     */
+    private void startPythonMode() {
+        Log.d(TAG, "Python-Modus gewählt");
+        
+        if (pythonAvailable) {
+            Intent intent = new Intent(this, org.kivy.android.PythonActivity.class);
+            startActivity(intent);
+            finish();
+        } else {
+            Toast.makeText(this, "Python-Bibliotheken fehlen!", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    /**
+     * Startet ReTerminal direkt
+     */
+    private void startReTerminalMode() {
+        Log.d(TAG, "Terminal-Modus gewählt");
+        Intent intent = new Intent(MyCustomActivity.this, 
+            com.rk.terminal.ui.activities.terminal.MainActivity.class);
+        startActivity(intent);
+        finish();
+    }
+}

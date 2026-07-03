@@ -1,0 +1,129 @@
+package com.rk.terminal.ui.navHosts
+
+import android.app.Activity
+import android.content.res.Configuration
+import android.os.Build
+import android.view.Window
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.WindowInsetsControllerCompat
+import androidx.navigation.NavHostController
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import com.rk.settings.Settings
+import com.rk.terminal.ui.activities.terminal.MainActivity
+import com.rk.terminal.ui.animations.NavigationAnimationTransitions
+import com.rk.terminal.ui.routes.MainActivityRoutes
+import com.rk.terminal.ui.screens.customization.Customization
+
+import com.rk.terminal.ui.screens.settings.Settings
+import com.rk.terminal.ui.screens.terminal.Rootfs
+import com.rk.terminal.ui.screens.terminal.TerminalScreen
+
+// ============================================================
+// ★ LOKALE SHOWLOG FUNKTION
+// ============================================================
+private fun showLog(title: String, message: String) {
+    MainActivity.showLog("MainActivityNavHost", "[$title] $message")
+}
+
+var showStatusBar = mutableStateOf(Settings.statusBar)
+var horizontal_statusBar = mutableStateOf(Settings.horizontal_statusBar)
+
+fun showStatusBar(show: Boolean, window: Window) {
+    showLog("Debug", "📊 StatusBar: ${if (show) "anzeigen" else "ausblenden"}")
+    
+    if (Build.VERSION.SDK_INT > Build.VERSION_CODES.Q) {
+        if (show) {
+            window.decorView.windowInsetsController!!.show(
+                android.view.WindowInsets.Type.statusBars()
+            )
+            showLog("Debug", "📊 StatusBar angezeigt (API > Q)")
+        } else {
+            window.decorView.windowInsetsController!!.hide(
+                android.view.WindowInsets.Type.statusBars()
+            )
+            showLog("Debug", "📊 StatusBar ausgeblendet (API > Q)")
+        }
+    } else {
+        if (show) {
+            WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+                controller.hide(WindowInsetsCompat.Type.statusBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_DEFAULT
+            }
+            showLog("Debug", "📊 StatusBar angezeigt (API <= Q)")
+        } else {
+            WindowInsetsControllerCompat(window, window.decorView).let { controller ->
+                controller.hide(WindowInsetsCompat.Type.statusBars())
+                controller.systemBarsBehavior =
+                    WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+            }
+            showLog("Debug", "📊 StatusBar ausgeblendet (API <= Q)")
+        }
+    }
+}
+
+@Composable
+fun UpdateStatusBar(mainActivityActivity: MainActivity, show: Boolean = true) {
+    LaunchedEffect(show) {
+        showLog("Debug", "📊 UpdateStatusBar: show=$show")
+        showStatusBar(show = show, window = mainActivityActivity.window)
+    }
+}
+
+@Composable
+fun MainActivityNavHost(modifier: Modifier = Modifier, navController: NavHostController, mainActivity: MainActivity) {
+    showLog("Info", "🚀 MainActivityNavHost initialisiert")
+    showLog("Debug", "📊 Rootfs isDownloaded: ${Rootfs.isDownloaded.value}")
+    
+    NavHost(
+        navController = navController,
+        startDestination = MainActivityRoutes.MainScreen.route,
+        enterTransition = { NavigationAnimationTransitions.enterTransition },
+        exitTransition = { NavigationAnimationTransitions.exitTransition },
+        popEnterTransition = { NavigationAnimationTransitions.popEnterTransition },
+        popExitTransition = { NavigationAnimationTransitions.popExitTransition },
+    ) {
+        composable(MainActivityRoutes.MainScreen.route) {
+            showLog("Debug", "🖥️ Navigiere zu MainScreen")
+            
+            if (Rootfs.isDownloaded.value) {
+                val config = LocalConfiguration.current
+                val isLandscape = Configuration.ORIENTATION_LANDSCAPE == config.orientation
+                
+                showLog("Debug", "🖥️ MainScreen: ${if (isLandscape) "Landscape" else "Portrait"}")
+                
+                if (isLandscape) {
+                    UpdateStatusBar(mainActivity, show = horizontal_statusBar.value)
+                } else {
+                    UpdateStatusBar(mainActivity, show = showStatusBar.value)
+                }
+
+                // ★ TerminalScreen anzeigen (mit integriertem Downloader)
+                TerminalScreen(mainActivityActivity = mainActivity, navController = navController)
+            } else {
+                showLog("Info", "📥 Rootfs nicht heruntergeladen, zeige TerminalScreen (Downloader-Modus)")
+                // ★ ★ ★ Jetzt: TerminalScreen mit Downloader-Modus ★ ★ ★
+                // Der Downloader ist in TerminalScreen integriert!
+                TerminalScreen(mainActivityActivity = mainActivity, navController = navController)
+            }
+        }
+        
+        composable(MainActivityRoutes.Settings.route) {
+            showLog("Info", "⚙️ Navigiere zu Settings")
+            UpdateStatusBar(mainActivity, show = true)
+            Settings(navController = navController, mainActivity = mainActivity)
+        }
+        
+        composable(MainActivityRoutes.Customization.route) {
+            showLog("Info", "🎨 Navigiere zu Customization")
+            UpdateStatusBar(mainActivity, show = true)
+            Customization()
+        }
+    }
+}

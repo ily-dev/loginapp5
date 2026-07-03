@@ -1,0 +1,83 @@
+package com.rk.update
+
+import com.rk.libcommons.application
+import com.rk.libcommons.child
+import com.rk.libcommons.createFileIfNot
+import com.rk.libcommons.localBinDir
+import com.rk.terminal.ui.activities.terminal.MainActivity
+import java.io.File
+import com.rk.terminal.Globals
+
+// ============================================================
+// ★ LOKALE SHOWLOG FUNKTION
+// ============================================================
+private fun showLog(title: String, message: String) {
+    try {
+        MainActivity.showLog("UpdateManager", "[$title] $message")
+    } catch (e: Exception) {
+        android.util.Log.d("UpdateManager", "[$title] $message")
+    }
+}
+
+class UpdateManager {
+    fun onUpdate() {
+        showLog("Info", "🔄 UpdateManager: Starte Update-Check")
+        
+        // ============================================================
+        // INIT-HOST FILE
+        // ============================================================
+        //viehandene init-host.sh vorher loeschen
+        
+        //.../local/bin/...
+        val initFile: File = localBinDir().child("init-host")
+        
+        if (initFile.exists()) {
+            showLog("Debug", "📄 Alte init-host Datei gefunden, lösche...")
+            initFile.delete()
+            showLog("Debug", "✅ init-host gelöscht")
+        }
+
+        if (initFile.exists().not()) {
+            showLog("Info", "📄 Erstelle neue init-host Datei...")
+            try {
+                initFile.createFileIfNot()
+                val script = application!!.assets.open("alpine/init-host.sh").bufferedReader().use { it.readText() }
+                initFile.writeText(script)
+                showLog("Info", "✅ init-host erstellt (${script.length} bytes)")
+                showLog("Debug", "📄 init-host Pfad: ${initFile.absolutePath}")
+            } catch (e: Exception) {
+                showLog("Error", "❌ Fehler beim Erstellen von init-host: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+
+        // ============================================================
+        // INIT FILE - init.sh (vorher loeschen
+        // .../local/bin/...
+        // ============================================================
+        val initFilex: File = localBinDir().child("init")
+        
+        if (initFilex.exists()) {
+            showLog("Debug", "📄 Alte init Datei gefunden, lösche...")
+            initFilex.delete()
+            showLog("Debug", "✅ init gelöscht")
+        }
+
+        if (initFilex.exists().not()) {
+            showLog("Info", "📄 Erstelle neue init Datei...")
+            try {
+                initFilex.createFileIfNot()
+                val script = application!!.assets.open("alpine/init.sh").bufferedReader().use { it.readText() }
+                initFilex.writeText(script)
+                showLog("Info", "✅ init erstellt (${script.length} bytes)")
+                showLog("Debug", "📄 init Pfad: ${initFilex.absolutePath}")
+            } catch (e: Exception) {
+                showLog("Error", "❌ Fehler beim Erstellen von init: ${e.message}")
+                e.printStackTrace()
+            }
+        }
+
+        showLog("Info", "✅ UpdateManager: Update abgeschlossen")
+        showLog("Debug", "📊 init-host: ${if (initFile.exists()) "✅" else "❌"}, init: ${if (initFilex.exists()) "✅" else "❌"}")
+    }
+}
