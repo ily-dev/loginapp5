@@ -12,18 +12,18 @@ import org.json.JSONObject;
 import org.json.JSONException;
 
 
-public class ExampleActivity extends org.qtproject.qt5.android.bindings.QtActivity
+public class MyPythonActivity extends org.qtproject.qt5.android.bindings.QtActivity
 {
-    private static final String TAG = "ExampleActivity";
+    private static final String TAG = "MyPythonActivity";
     private static final String CHANNEL_ID = "my_channel";
 
-    private static ExampleActivity m_instance;
+    private static MyPythonActivity m_instance;
     private static NotificationManager m_notificationManager;
 
 
-    public ExampleActivity()
+    public MyPythonActivity()
     {
-        Log.i(TAG, "ExampleActivity ctor");
+        Log.i(TAG, "MyPythonActivity ctor");
         m_instance = this;
     }
 
@@ -63,7 +63,7 @@ public class ExampleActivity extends org.qtproject.qt5.android.bindings.QtActivi
         Notification notification = new Notification.Builder(m_instance, CHANNEL_ID)
             .setContentTitle(title)
             .setContentText(text)
-            .setSmallIcon(res.mipmap/icon)
+            .setSmallIcon(R.mipmap.icon)
             .build();
 
         m_notificationManager.notify(1, notification);
