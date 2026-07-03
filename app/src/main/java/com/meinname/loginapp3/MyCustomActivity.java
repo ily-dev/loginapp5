@@ -23,7 +23,7 @@ import org.kivy.android.PythonService;
 public class MyCustomActivity extends Activity {
     private static final String TAG = "LOGINAPP_ACTIVITY";
     private boolean pythonAvailable = false;
-    private RadioButton rbPython, rbTerminal;
+    private RadioButton rbPythonQt, rbPython, rbTerminal;
     private TextView tvStatus;
 
     // ============================================================
@@ -144,8 +144,18 @@ public class MyCustomActivity extends Activity {
         // RadioGroup (sorgt dafür, dass nur EIN Button aktiv ist!)
         final RadioGroup radioGroup = new RadioGroup(this);
         radioGroup.setOrientation(LinearLayout.VERTICAL);
+        
+        // RadioButton 1: Python Qt (nur anzeigen, wenn verfügbar)
+        if (pythonAvailable) {
+            rbPythonQt = new RadioButton(this);
+            rbPythonQt.setId(View.generateViewId());
+            rbPythonQt.setText("🐍 Python (Qt) - Hauptmodus");
+            rbPythonQt.setPadding(0, 10, 0, 10);
+            radioGroup.addView(rbPythonQt);
+            showLog("showModeSelectionDialog", "➕ Python Qt RadioButton hinzugefügt");
+        }
 
-        // RadioButton 1: Python (nur anzeigen, wenn verfügbar)
+        // RadioButton 2: Python (nur anzeigen, wenn verfügbar)
         if (pythonAvailable) {
             rbPython = new RadioButton(this);
             rbPython.setId(View.generateViewId());
@@ -155,7 +165,7 @@ public class MyCustomActivity extends Activity {
             showLog("showModeSelectionDialog", "➕ Python RadioButton hinzugefügt");
         }
 
-        // RadioButton 2: Terminal (immer verfügbar)
+        // RadioButton 3: Terminal (immer verfügbar)
         rbTerminal = new RadioButton(this);
         rbTerminal.setId(View.generateViewId());
         rbTerminal.setText("💻 Terminal (ReTerminal)");
@@ -200,11 +210,20 @@ public class MyCustomActivity extends Activity {
                 // Prüfen, WELCHER RadioButton ausgewählt ist:
                 if (pythonAvailable && rbPython != null && selectedId == rbPython.getId()) {
                     showLog("showModeSelectionDialog", "🐍 Python Modus ausgewählt");
+                    //start Python kivy
                     startPythonMode();
-                } else {
-                    showLog("showModeSelectionDialog", "💻 Terminal Modus ausgewählt");
-                    startReTerminalMode();
+                   
+                    
+                 } else if (rbPythonQt != null && selectedId == rbPythonQt.getId()) {
+                 showLog("showModeSelectionDialog", "🐍 Qt Modus ausgewählt");
+                 //start Python Qt
+                 startPythonQt();    // ← NEUE Funktion (Qt)
+                 } else {
+            showLog("showModeSelectionDialog", "💻 Terminal Modus ausgewählt");
+                startReTerminalMode();
                 }
+                
+                
             }
         });
 
@@ -218,6 +237,26 @@ public class MyCustomActivity extends Activity {
 
         builder.show();
         showLog("showModeSelectionDialog", "✅ Dialog angezeigt");
+    }
+    
+    
+    /**
+     * Startet den Qt-Modus (PySide6/PyQt) - NEU!
+     */
+    private void startPythonQt() {
+        showLog("startPythonQt", "🐍 Starte Qt-Modus");
+        Log.d(TAG, "Qt-Modus gewählt");
+        
+        try {
+            showLog("startPythonQt", "📝 Starte MyPythonActivity (Qt)");
+            Intent intent = new Intent(this, com.meinname.loginapp3.MyPythonActivity.class);
+            startActivity(intent);
+            showLog("startPythonQt", "✅ MyPythonActivity gestartet");
+            finish();
+        } catch (Exception e) {
+            showLog("startPythonQt", "❌ Fehler beim Starten von Qt: " + e.getMessage());
+            Toast.makeText(this, "Fehler beim Starten von Qt: " + e.getMessage(), Toast.LENGTH_LONG).show();
+        }
     }
 
     /**
